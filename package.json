@@ -1,0 +1,23 @@
+{
+  "name": "agent-ai-bot-fb",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "login": "tsx src/cli.ts login",
+    "search": "tsx src/cli.ts search",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/logic.test.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
