@@ -1,6 +1,6 @@
 # Publiczne strony Facebooka — lista adresów
 
-Projekt otwiera lokalny Chrome przez Playwright, loguje na Facebooku i wyszukuje **publiczne strony** według fraz z profilu. Wynik — deduplikowana lista adresów stron — ląduje w `data/<id>/candidates.json` i jest nadpisywany przy każdym uruchomieniu (gdy wyszukiwanie nie zwróci nic, stary plik zostaje).
+Projekt otwiera przez Playwright lokalnego Chrome'a (a gdy go nie ma w systemie — pobrany automatycznie Chromium), loguje na Facebooku i wyszukuje **publiczne strony** według fraz z profilu. Wynik — deduplikowana lista adresów stron — ląduje w `data/<id>/candidates.json` i jest nadpisywany przy każdym uruchomieniu (gdy wyszukiwanie nie zwróci nic, stary plik zostaje).
 
 ## Uruchomienie
 
