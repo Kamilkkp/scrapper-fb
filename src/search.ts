@@ -18,14 +18,38 @@ export function cleanSnippet(cardText: string, name: string): string {
   const parts: string[] = [];
   const seen = new Set<string>();
   for (const line of cardText.split("\n")) {
-    const part = line.replace(/\s+/g, " ").trim();
+    // FB zaciemnia część kart: litery rozdziela niewidzialnymi znakami (U+034F itd.)
+    // i w DOM są „rozsypane”. Niewidzialne znaki wycinamy, a linię z samych
+    // pojedynczych liter traktujemy jako bełkot i pomijamy.
+    const part = line
+      .replace(/[͏​⁠﻿]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!part || SKIP_LINES.test(part)) continue;
+    const tokens = part.split(" ");
+    const singles = tokens.filter((token) => token.length === 1).length;
+    if (tokens.length >= 6 && singles / tokens.length > 0.6) continue;
     if (name && part === name) continue;
     if (seen.has(part)) continue;
     seen.add(part);
     parts.push(part);
   }
   return parts.join(" · ").slice(0, 600);
+}
+
+// Wyciąga liczbę obserwujących ze snippetu. Obsługuje polskie formaty
+// („184 obserwujących”, „1 234 obserwujących”, „1,2 tys. obserwujących”)
+// i angielskie („184 followers”, „1.2K followers”).
+export function followersFromSnippet(snippet: string): number | null {
+  const match = snippet.match(/(\d[\d\s ]*(?:[.,]\d+)?)\s*(tys\.|mln|[KM])?\s*(?:obserwuj\w*|followers)/i);
+  if (!match) return null;
+  let raw = match[1].replace(/[\s ]/g, "");
+  const suffix = (match[2] ?? "").toLowerCase();
+  if (!suffix && /[.,]\d{3}$/.test(raw)) raw = raw.replace(/[.,]/g, ""); // separator tysięcy
+  const value = Number(raw.replace(",", "."));
+  if (!Number.isFinite(value)) return null;
+  const multiplier = suffix === "tys." || suffix === "k" ? 1_000 : suffix === "mln" || suffix === "m" ? 1_000_000 : 1;
+  return Math.round(value * multiplier);
 }
 
 function nameFromSnippet(snippet: string): string {
@@ -250,8 +274,16 @@ export async function searchPages(profile: ClientProfile, maxResults: number | n
     }
 
     const candidates = [...found.values()]
-      .map((item) => ({ ...item, name: item.name || nameFromSnippet(item.snippet) }))
-      .filter((item) => item.name);
+      .map((item) => ({
+        name: item.name || nameFromSnippet(item.snippet),
+        followers: followersFromSnippet(item.snippet),
+        url: item.url,
+        snippet: item.snippet,
+        query: item.query,
+      }))
+      .filter((item) => item.name)
+      // Malejąco po liczbie obserwujących; strony bez wykrytej liczby lądują na końcu.
+      .sort((a, b) => (b.followers ?? -1) - (a.followers ?? -1));
 
     if (candidates.length === 0) {
       await dumpDebug(pages[0], dir, "search-empty");
@@ -261,7 +293,10 @@ export async function searchPages(profile: ClientProfile, maxResults: number | n
     }
 
     writeJson(path.join(dir, "candidates.json"), candidates);
-    log(`Zapisano ${candidates.length} kandydatów do data/${profile.id}/candidates.json`);
+    const withFollowers = candidates.filter((item) => item.followers !== null).length;
+    log(
+      `Zapisano ${candidates.length} kandydatów (z wykrytą liczbą obserwujących: ${withFollowers}) do data/${profile.id}/candidates.json — posortowani malejąco po obserwujących.`,
+    );
     return candidates;
   } finally {
     await context.close().catch(() => undefined);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { splitWork } from "./browser.ts";
-import { cleanSnippet } from "./search.ts";
+import { cleanSnippet, followersFromSnippet } from "./search.ts";
 import { randomHumanMs } from "./human.ts";
 import { loadProfile } from "./profile.ts";
 import { cleanPageName, normalizeFbUrl } from "./urls.ts";
@@ -42,6 +42,20 @@ test("składa snippet z osobnych linii karty, bez przycisków i duplikatów nazw
     cleanSnippet(card, "Koło Gospodyń Wiejskich w Raczycach"),
     "Usługi socjalne · Wiejska 14, Raczyce · 184 obserwujących · Tradycja, smak i wspólnota. Działamy razem dla naszej wsi.",
   );
+});
+
+test("wycina zaciemniony przez FB bełkot z pojedynczych liter", () => {
+  const card = ["⁠ · t͏ · e͏ · o͏ · r͏ · n͏ · s͏ · S͏ · d͏ · p͏ · c͏ · f͏ · 0͏ · 1͏ · 5͏ · a͏ · 8͏ · u͏ · 9", "Producent hal · 300 obserwujących"].join("\n");
+  assert.equal(cleanSnippet(card, ""), "Producent hal · 300 obserwujących");
+});
+
+test("wyciąga liczbę obserwujących ze snippetu", () => {
+  assert.equal(followersFromSnippet("Usługi socjalne · Wiejska 14 · 184 obserwujących"), 184);
+  assert.equal(followersFromSnippet("Producent · 1 234 obserwujących"), 1234);
+  assert.equal(followersFromSnippet("Hale stalowe · 1,2 tys. obserwujących"), 1200);
+  assert.equal(followersFromSnippet("Media · 2 mln obserwujących"), 2_000_000);
+  assert.equal(followersFromSnippet("Company · 1.2K followers"), 1200);
+  assert.equal(followersFromSnippet("Firma · bez licznika"), null);
 });
 
 test("dzieli pracę na trzy karty", () => {

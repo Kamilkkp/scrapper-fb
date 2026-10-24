@@ -8,4 +8,5 @@ export type Candidate = {
   url: string;
   snippet: string;
   query: string;
+  followers?: number | null;
 };
