@@ -6,6 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "playwright install chromium",
     "login": "tsx src/cli.ts login",
     "search": "tsx src/cli.ts search",
     "typecheck": "tsc --noEmit",

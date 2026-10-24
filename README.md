@@ -19,9 +19,10 @@ Projekt działa na Windowsie bez zmian (Node.js + Playwright są multiplatformow
 # 1. Zainstaluj Node.js LTS z https://nodejs.org
 # 2. W katalogu projektu (PowerShell lub cmd):
 npm install
-npx playwright install chromium
 npm run search -- --profile profiles/kolo-gospodyn.yaml
 ```
+
+`npm install` sam pobiera też Chromium (skrypt postinstall).
 
 - Jeśli masz zainstalowany Google Chrome, skrypt użyje go automatycznie; bez Chrome'a sam spadnie na pobrany Chromium.
 - Plik `.env` z `FB_EMAIL` i `FB_PASSWORD` działa tak samo jak na Linuksie.
