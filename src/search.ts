@@ -186,8 +186,9 @@ async function searchQueries(
   await requireSession(page);
 
   for (const query of queries) {
-    if (reachedLimit(found.size, profile.max_results)) break;
     log(`Szukam: ${query}`);
+    // max_results dotyczy jednej frazy (jednej karty), nie sumy wyników.
+    const startCount = found.size;
     await dismissOverlays(page);
     try {
       await typeQuery(page, query);
@@ -201,7 +202,7 @@ async function searchQueries(
 
     let idle = 0;
     for (let step = 0; step < 600 && idle < 5; step += 1) {
-      if (reachedLimit(found.size, profile.max_results)) break;
+      if (reachedLimit(found.size - startCount, profile.max_results)) break;
       const grew = await loadMore(page);
       idle = grew ? 0 : idle + 1;
       if (step % 10 === 9) {
@@ -254,11 +255,9 @@ export async function searchPages(profile: ClientProfile): Promise<Candidate[]> 
       }
     }
 
-    const collected = [...found.values()]
+    const candidates = [...found.values()]
       .map((item) => ({ ...item, name: item.name || nameFromSnippet(item.snippet) }))
       .filter((item) => item.name);
-    const candidates =
-      profile.max_results === null ? collected : collected.slice(0, profile.max_results);
 
     if (candidates.length === 0) {
       await dumpDebug(pages[0], dir, "search-empty");

@@ -30,6 +30,6 @@ npm run search -- --profile profiles/kolo-gospodyn.yaml
 
 ## Konfiguracja profilu
 
-Nowy profil to plik YAML w `profiles/`: `id` (nazwa katalogu wyników), `search_queries` (frazy wpisywane do wyszukiwarki) i opcjonalne `max_results`, które ogranicza liczbę zebranych stron.
+Nowy profil to plik YAML w `profiles/`: `id` (nazwa katalogu wyników), `search_queries` (frazy wpisywane do wyszukiwarki) i opcjonalne `max_results` — limit zebranych stron **na jedną frazę** (każda fraza leci w osobnej karcie równolegle).
 
 Sesja Facebooka zostaje lokalnie w `.auth/chrome-profile`; nie jest commitowana.
