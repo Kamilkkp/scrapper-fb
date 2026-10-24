@@ -9,6 +9,8 @@ npm install
 npm run search -- --profile profiles/kolo-gospodyn.yaml
 ```
 
+Opcjonalna flaga `--max-results 100` ogranicza liczbę stron zebranych dla jednej frazy (każda fraza leci w osobnej karcie równolegle).
+
 Wyszukiwarka na samym początku loguje — jeśli sesja w `.auth/chrome-profile` wygasła, otwiera formularz (wypełnia go z `FB_EMAIL`/`FB_PASSWORD` z `.env`, gdy są ustawione) i czeka na dokończenie logowania w oknie. Samo logowanie można też odpalić osobno: `npm run login`.
 
 ## Windows
@@ -30,6 +32,6 @@ npm run search -- --profile profiles/kolo-gospodyn.yaml
 
 ## Konfiguracja profilu
 
-Nowy profil to plik YAML w `profiles/`: `id` (nazwa katalogu wyników), `search_queries` (frazy wpisywane do wyszukiwarki) i opcjonalne `max_results` — limit zebranych stron **na jedną frazę** (każda fraza leci w osobnej karcie równolegle).
+Nowy profil to plik YAML w `profiles/` z dwoma polami: `id` (nazwa katalogu wyników) i `search_queries` (frazy wpisywane do wyszukiwarki).
 
 Sesja Facebooka zostaje lokalnie w `.auth/chrome-profile`; nie jest commitowana.

@@ -10,11 +10,22 @@ loadDotEnv();
 
 function printHelp(): void {
   console.log(`Użycie:
-  npm run search -- --profile profiles/kolo-gospodyn.yaml
+  npm run search -- --profile profiles/kolo-gospodyn.yaml [--max-results 100]
   npm run login
 
 search na starcie loguje (gdy sesja wygasła), przeszukuje frazy z profilu
-i zapisuje listę adresów stron do data/<id>/candidates.json.`);
+i zapisuje listę adresów stron do data/<id>/candidates.json.
+--max-results ogranicza liczbę stron zebranych dla jednej frazy.`);
+}
+
+function maxResultsOption(): number | null {
+  const raw = option("max-results");
+  if (raw === undefined) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new Error("--max-results musi być dodatnią liczbą.");
+  }
+  return Math.floor(parsed);
 }
 
 function requireProfile(): ClientProfile {
@@ -30,7 +41,7 @@ async function main(): Promise<void> {
       await login();
       return;
     case "search":
-      await searchPages(requireProfile());
+      await searchPages(requireProfile(), maxResultsOption());
       return;
     case undefined:
     case "help":

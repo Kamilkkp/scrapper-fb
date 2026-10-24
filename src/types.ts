@@ -1,7 +1,6 @@
 export type ClientProfile = {
   id: string;
   search_queries: string[];
-  max_results: number | null;
 };
 
 export type Candidate = {

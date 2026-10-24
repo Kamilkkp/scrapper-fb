@@ -177,9 +177,9 @@ function remember(map: Map<string, Candidate>, raw: RawLink, query: string): voi
 
 async function searchQueries(
   page: Page,
-  profile: ClientProfile,
   queries: string[],
   dir: string,
+  maxResults: number | null,
 ): Promise<Candidate[]> {
   const found = new Map<string, Candidate>();
   await page.goto("https://www.facebook.com/", { waitUntil: "domcontentloaded" });
@@ -187,7 +187,7 @@ async function searchQueries(
 
   for (const query of queries) {
     log(`Szukam: ${query}`);
-    // max_results dotyczy jednej frazy (jednej karty), nie sumy wyników.
+    // Limit dotyczy jednej frazy (jednej karty), nie sumy wyników.
     const startCount = found.size;
     await dismissOverlays(page);
     try {
@@ -202,7 +202,7 @@ async function searchQueries(
 
     let idle = 0;
     for (let step = 0; step < 600 && idle < 5; step += 1) {
-      if (reachedLimit(found.size - startCount, profile.max_results)) break;
+      if (reachedLimit(found.size - startCount, maxResults)) break;
       const grew = await loadMore(page);
       idle = grew ? 0 : idle + 1;
       if (step % 10 === 9) {
@@ -217,7 +217,7 @@ async function searchQueries(
   return [...found.values()];
 }
 
-export async function searchPages(profile: ClientProfile): Promise<Candidate[]> {
+export async function searchPages(profile: ClientProfile, maxResults: number | null = null): Promise<Candidate[]> {
   const dir = profileDir(profile.id);
   const found = new Map<string, Candidate>();
   const context = await openContext();
@@ -242,7 +242,7 @@ export async function searchPages(profile: ClientProfile): Promise<Candidate[]> 
 
   try {
     const settled = await Promise.allSettled(
-      buckets.map((queries, index) => searchQueries(pages[index], profile, queries, dir)),
+      buckets.map((queries, index) => searchQueries(pages[index], queries, dir, maxResults)),
     );
     const groups: Candidate[][] = [];
     for (const result of settled) {
