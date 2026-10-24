@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { type Page } from "playwright";
-import { dismissOverlays, firstPage, openContext, openWorkerPages, PARALLEL_WORKERS, requireSession, SEARCH_INPUT, splitWork } from "./browser.ts";
+import { dismissOverlays, firstPage, openContext, openWorkerPages, requireSession, SEARCH_INPUT, splitWork } from "./browser.ts";
 import { pause } from "./human.ts";
 import { ensureSession } from "./login.ts";
 import { log, profileDir, writeJson } from "./io.ts";
@@ -227,9 +227,10 @@ export async function searchPages(profile: ClientProfile): Promise<Candidate[]> 
   await entryPage.goto("https://www.facebook.com/", { waitUntil: "domcontentloaded" });
   await ensureSession(entryPage);
 
-  const buckets = splitWork(profile.search_queries, PARALLEL_WORKERS);
+  // Jedna fraza = jedna karta — wszystkie zapytania lecą równolegle.
+  const buckets = splitWork(profile.search_queries, profile.search_queries.length);
   const pages = await openWorkerPages(context, buckets.length);
-  log(`Wyszukiwanie w ${pages.length} kartach Chrome.`);
+  log(`Wyszukiwanie w ${pages.length} kartach Chrome (po jednej na frazę).`);
 
   const previousFile = path.join(dir, "candidates.json");
   if (fs.existsSync(previousFile)) {

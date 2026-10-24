@@ -14,7 +14,9 @@ async function visibleField(page: Page, candidates: Locator[]): Promise<Locator 
 }
 
 async function typeInto(page: Page, field: Locator, value: string): Promise<boolean> {
-  await field.click();
+  // focus zamiast click — baner cookies przechwytuje kliknięcia (hit-test),
+  // a focus idzie przez DOM i działa mimo przykrywającego overlaya.
+  await field.focus();
   await page.keyboard.press("Control+A");
   await page.keyboard.press("Backspace");
   await page.keyboard.type(value, { delay: 30 });
@@ -35,7 +37,11 @@ async function prefillCredentials(page: Page): Promise<void> {
 
   log(`Wczytano login (${email.length} znaków) i hasło (${password.length} znaków). Wpisuję w widoczne pola.`);
   await page.goto("https://www.facebook.com/login", { waitUntil: "domcontentloaded" });
-  await dismissOverlays(page);
+  // Baner cookies renderuje się z opóźnieniem — czyszczę kilka razy.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await dismissOverlays(page);
+    await pause(500, 800);
+  }
   await page.getByRole("button", { name: /Zaloguj się|Log in/i }).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => undefined);
 
   const emailField = await visibleField(page, [
@@ -63,15 +69,17 @@ async function prefillCredentials(page: Page): Promise<void> {
   }
 
   await pause(400, 800);
-  const submit = await visibleField(page, [
-    page.getByRole("button", { name: /^Zaloguj się$|^Log in$/i }),
-    page.locator("button[name='login']"),
-  ]);
-  if (!submit) {
-    log("Pola uzupełnione. Kliknij Zaloguj się w oknie Chrome.");
-    return;
+  // Enter idzie do sfokusowanego pola hasła i wysyła formularz mimo overlaya;
+  // klik w przycisk zostaje jako zapas.
+  await page.keyboard.press("Enter");
+  await pause(2000, 3000);
+  if (/login/.test(page.url())) {
+    const submit = await visibleField(page, [
+      page.getByRole("button", { name: /^Zaloguj się$|^Log in$/i }),
+      page.locator("button[name='login']"),
+    ]);
+    if (submit) await submit.click({ timeout: 5_000 }).catch(() => undefined);
   }
-  await submit.click();
   log("Wysłano formularz. Dokończ 2FA albo checkpoint w oknie. Okno zostaje otwarte.");
 }
 
@@ -93,6 +101,7 @@ export async function ensureSession(page: Page): Promise<void> {
   }
 
   const started = Date.now();
+  let lastState = "";
   while (Date.now() - started < LOGIN_TIMEOUT_MS) {
     await pause(1500, 2200);
     await dismissOverlays(page);
@@ -100,8 +109,16 @@ export async function ensureSession(page: Page): Promise<void> {
       log("Zalogowano. Sesja zapisana w .auth/chrome-profile.");
       return;
     }
-    if (looksLikeCheckpoint(page)) {
-      log("Facebook prosi o potwierdzenie tożsamości. Dokończ to w oknie przeglądarki.");
+    // „login” w URL to zwykła strona logowania, nie checkpoint — komunikaty rozróżniam
+    // i loguję tylko przy zmianie stanu, bez spamu co 2 sekundy.
+    const state = /checkpoint|two_factor|recover/i.test(page.url()) ? "checkpoint" : "waiting";
+    if (state !== lastState) {
+      lastState = state;
+      log(
+        state === "checkpoint"
+          ? "Facebook prosi o potwierdzenie tożsamości. Dokończ to w oknie przeglądarki."
+          : "Czekam na zalogowanie w oknie Chrome...",
+      );
     }
   }
   throw new Error("Logowanie nie doszło do skutku w ciągu 10 minut.");

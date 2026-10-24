@@ -71,8 +71,6 @@ export async function openContext(): Promise<BrowserContext> {
   );
 }
 
-export const PARALLEL_WORKERS = 3;
-
 export async function firstPage(context: BrowserContext): Promise<Page> {
   const page = context.pages()[0] ?? (await context.newPage());
   page.setDefaultTimeout(20_000);
@@ -103,6 +101,10 @@ export async function dismissOverlays(page: Page): Promise<void> {
   const labels = [
     "Zezwól na wszystkie pliki cookie",
     "Allow all cookies",
+    "Zezwól na niezbędne i opcjonalne pliki cookie",
+    "Allow essential and optional cookies",
+    "Odrzuć opcjonalne pliki cookie",
+    "Decline optional cookies",
     "Akceptuj wszystkie",
     "Nie teraz",
     "Not now",
