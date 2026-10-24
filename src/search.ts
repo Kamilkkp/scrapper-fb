@@ -170,8 +170,7 @@ function remember(map: Map<string, Candidate>, raw: RawLink, query: string): voi
     return;
   }
   if (name && name.length > previous.name.length) previous.name = name;
-  // Świeży snippet zawsze nadpisuje stary — przy ponownym wyszukiwaniu
-  // zastępuje też dawny, zlepiony format z poprzednich uruchomień.
+  // Ta sama strona może wyjść przy kilku frazach — świeży snippet nadpisuje starszy.
   if (snippet) previous.snippet = snippet;
 }
 
@@ -233,13 +232,8 @@ export async function searchPages(profile: ClientProfile, maxResults: number | n
   const pages = await openWorkerPages(context, buckets.length);
   log(`Wyszukiwanie w ${pages.length} kartach Chrome (po jednej na frazę).`);
 
-  const previousFile = path.join(dir, "candidates.json");
-  if (fs.existsSync(previousFile)) {
-    for (const old of JSON.parse(fs.readFileSync(previousFile, "utf8")) as Candidate[]) {
-      remember(found, { href: old.url, name: old.name, snippet: old.snippet }, old.query);
-    }
-  }
-
+  // Lista zapisywana zawsze na nowo z bieżącego uruchomienia — bez mergowania
+  // z poprzednim plikiem. Pusty wynik rzuca błędem, więc dobra lista nie zniknie.
   try {
     const settled = await Promise.allSettled(
       buckets.map((queries, index) => searchQueries(pages[index], queries, dir, maxResults)),
