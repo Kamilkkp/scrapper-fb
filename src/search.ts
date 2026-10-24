@@ -34,6 +34,10 @@ function nameFromSnippet(snippet: string): string {
   return cleanPageName(head.slice(0, 80));
 }
 
+function reachedLimit(count: number, limit: number | null): boolean {
+  return limit !== null && count >= limit;
+}
+
 async function dumpDebug(page: Page, dir: string, label: string): Promise<void> {
   const debug = path.join(dir, "debug");
   await page.screenshot({ path: path.join(debug, `${label}.png`) }).catch(() => undefined);
@@ -182,6 +186,7 @@ async function searchQueries(
   await requireSession(page);
 
   for (const query of queries) {
+    if (reachedLimit(found.size, profile.max_results)) break;
     log(`Szukam: ${query}`);
     await dismissOverlays(page);
     try {
@@ -196,6 +201,7 @@ async function searchQueries(
 
     let idle = 0;
     for (let step = 0; step < 600 && idle < 5; step += 1) {
+      if (reachedLimit(found.size, profile.max_results)) break;
       const grew = await loadMore(page);
       idle = grew ? 0 : idle + 1;
       if (step % 10 === 9) {
@@ -247,9 +253,11 @@ export async function searchPages(profile: ClientProfile): Promise<Candidate[]> 
       }
     }
 
-    const candidates = [...found.values()]
+    const collected = [...found.values()]
       .map((item) => ({ ...item, name: item.name || nameFromSnippet(item.snippet) }))
       .filter((item) => item.name);
+    const candidates =
+      profile.max_results === null ? collected : collected.slice(0, profile.max_results);
 
     if (candidates.length === 0) {
       await dumpDebug(pages[0], dir, "search-empty");

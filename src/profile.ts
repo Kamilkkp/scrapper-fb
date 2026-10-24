@@ -15,5 +15,18 @@ export function loadProfile(file: string): ClientProfile {
     throw new Error("search_queries musi być niepustą listą fraz.");
   }
 
-  return { id, search_queries: queries.map((q) => q.trim()) };
+  return {
+    id,
+    search_queries: queries.map((q) => q.trim()),
+    max_results: optionalLimit(raw.max_results),
+  };
+}
+
+function optionalLimit(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new Error("max_results musi być dodatnią liczbą albo nie występować w pliku.");
+  }
+  return Math.floor(parsed);
 }

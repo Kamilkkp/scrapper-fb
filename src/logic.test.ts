@@ -51,6 +51,7 @@ test("dzieli pracę na trzy karty", () => {
 test("czyta przykładowy profil klienta", () => {
   const loaded = loadProfile(fileURLToPath(new URL("../profiles/hale-stalowe.yaml", import.meta.url)));
   assert.equal(loaded.id, "hale-stalowe");
+  assert.equal(loaded.max_results, 25);
   assert.ok(loaded.search_queries.length >= 2);
 });
 
